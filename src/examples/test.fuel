@@ -1,0 +1,11 @@
+//truth machine
+CONST 1 = true
+CONST 0 = false
+
+String inp = input()
+
+if inp.val() == 1 then{
+    print("1")
+}else {
+    print("0")
+}
