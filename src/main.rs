@@ -38,12 +38,12 @@ pub enum TokenTypes{
     //functions
     PRINTFN,
     INPUT,
-    RPAREN,
-    LPAREN,
     //misc
     IDENTIFIER,
     CLASS,
     NEWLINE,
+    RPAREN,
+    LPAREN,
     //operators
     PLUS,
     MINUS,
@@ -145,8 +145,25 @@ impl LEXER for Lexer{
         let mut res: Vec<Token> = Vec::new();
         let spl = self.input.split_whitespace();
         for i in spl{
+            //datatypes
             if i == "String"{
                 res.push(Token{ token_type: TokenTypes::STRING, token_value: String::from(i)});
+            }else if i == "Array"{
+                res.push(Token{ token_type: TokenTypes::ARRAY, token_value: String::from(i)});
+            }else if i == "Integer"{
+                res.push(Token{ token_type: TokenTypes::INTEGER, token_value: String::from(i)});
+            }else if i == "Bool"{
+                res.push(Token{ token_type: TokenTypes::BOOL, token_value: String::from(i)});
+            }else if i == "Float"{
+                res.push(Token{ token_type: TokenTypes::FLOAT, token_value: String::from(i)});
+            }else if i == "Double"{
+                res.push(Token{ token_type: TokenTypes::DOUBLE, token_value: String::from(i)});
+            }
+            //functions
+            else if i == "input"{
+                res.push(Token{ token_type: TokenTypes::INPUT, token_value: String::from(i)});
+            }else if i == "print"{
+                res.push(Token{ token_type: TokenTypes::PRINTFN, token_value: String::from(i)});
             }
             else{res.push(Token{ token_type: TokenTypes::IDENTIFIER, token_value: String::from(i)});}
         }
