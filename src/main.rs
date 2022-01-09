@@ -18,14 +18,15 @@ fn main() {
         if args[1] == "run"{
             println!("{} code runing!\n","unoptimized".green());
             let lexer = Lexer{input: read_file(&args[2])};
-            lexer.lex();
+            let lexed = lexer.lex();
+            for i in lexed{println!("[{}]",i.to_string());}
         }else if args[1] == "compile"{
             println!("building");
         }
     }
 }
 }
-
+#[derive(Debug)]
 pub enum TokenTypes{
     //dataTokenTypes
     ARRAY,
@@ -121,12 +122,22 @@ impl TOK for Token{
     }
 }
 
+//important functions
 fn read_file(filepath: &String) -> String{
     let contents = fs::read_to_string(filepath)
         .expect("Something went wrong reading the file");
     return contents;
 }
 
+fn split_with_newline(inp:&String) -> Vec<String>{
+    let res: Vec<String> = Vec::new();
+
+    
+
+    return res;
+}
+
+#[derive(Debug)]
 struct Token{
     token_type: TokenTypes,
     token_value: String,
@@ -143,7 +154,7 @@ trait LEXER{
 impl LEXER for Lexer{
     fn lex(&self) -> Vec<Token>{
         let mut res: Vec<Token> = Vec::new();
-        let spl = self.input.split_whitespace();
+        let spl = split_with_newline(&self.input);
         for i in spl{
             //datatypes
             if i == "String"{
@@ -165,8 +176,14 @@ impl LEXER for Lexer{
             }else if i == "print"{
                 res.push(Token{ token_type: TokenTypes::PRINTFN, token_value: String::from(i)});
             }
+            //misc
+            else if i == "class"{
+                res.push(Token{ token_type: TokenTypes::CLASS, token_value: String::from(i)});
+            }
             else{res.push(Token{ token_type: TokenTypes::IDENTIFIER, token_value: String::from(i)});}
+            
         }
+        
         return res;
     }
 }

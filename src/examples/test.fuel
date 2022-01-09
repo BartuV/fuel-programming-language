@@ -1,6 +1,4 @@
-//truth machine
-CONST 1 = true
-CONST 0 = false
+//truth machine 
 
 String inp = input()
 
