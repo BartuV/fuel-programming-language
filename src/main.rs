@@ -214,8 +214,54 @@ impl LEXER for Lexer{
     }
 }
 
-//parser
+//string slicing
+use std::ops::{Bound, RangeBounds};
 
+trait StringUtils {
+    fn substring(&self, start: usize, len: usize) -> &str;
+    fn slice(&self, range: impl RangeBounds<usize>) -> &str;
+}
+
+impl StringUtils for String {
+    fn substring(&self, start: usize, len: usize) -> &str {
+        let mut char_pos = 0;
+        let mut byte_start = 0;
+        let mut it = self.chars();
+        loop {
+            if char_pos == start { break; }
+            if let Some(c) = it.next() {
+                char_pos += 1;
+                byte_start += c.len_utf8();
+            }
+            else { break; }
+        }
+        char_pos = 0;
+        let mut byte_end = byte_start;
+        loop {
+            if char_pos == len { break; }
+            if let Some(c) = it.next() {
+                char_pos += 1;
+                byte_end += c.len_utf8();
+            }
+            else { break; }
+        }
+        &self[byte_start..byte_end]
+    }
+    fn slice(&self, range: impl RangeBounds<usize>) -> &str {
+        let start = match range.start_bound() {
+            Bound::Included(bound) | Bound::Excluded(bound) => *bound,
+            Bound::Unbounded => 0,
+        };
+        let len = match range.end_bound() {
+            Bound::Included(bound) => *bound + 1,
+            Bound::Excluded(bound) => *bound,
+            Bound::Unbounded => self.len(),
+        } - start;
+        self.substring(start, len)
+    }
+}
+
+//parser
 struct Parser {
     inp: Vec<Token>
 }
@@ -226,6 +272,38 @@ trait Pars{
 
 impl Pars for Parser{
     fn parse(&self){
-        
+        //variable detection
+        let varlist: Vec<Variable> = Vec::new();
+        for i in 0..self.inp.len(){
+            let cur = &self.inp[i];
+            if cur.token_type.to_string() == TokenTypes::STRING.to_string(){
+                if String::from(self.inp[i+1].token_value.chars().nth(self.inp[i+1].token_value.chars().count()).unwrap()) == "="{
+                    
+                }
+            }
+        }
+    }
+}
+
+//utilities
+
+struct Variable{
+    vartype: TokenTypes,
+    varname: String,
+    varvar:String, 
+}
+
+trait Tostr{
+    fn to_string(&self) -> String;
+}
+
+impl Tostr for Variable{
+    fn to_string(&self) -> String{
+        let mut res:String = String::new();
+        res += &self.vartype.to_string();
+        res += ", ";
+        res += &self.varname;
+        res += &self.varvar;
+        return res;
     }
 }
