@@ -3,6 +3,7 @@ use std::env;
 use std::fs;
 use colored::*;
 use std::fmt;
+use exitcode;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -11,15 +12,18 @@ fn main() {
     }else{
     if args.len() < 3 {
         println!("{}","Please provide a filepath".red()); 
+        std::process::exit(exitcode::USAGE);
     }else if args.len() > 3{
         println!("{}","Too many arguments".red());
+        std::process::exit(exitcode::USAGE);
     }
     else{
         if args[1] == "run"{
             println!("{} code runing!\n","unoptimized".green());
-            let lexer = Lexer{input: read_file(&args[2])};
+            let lexer = Lexer{input: read_with_newline(&args[2]).to_vec()};
             let lexed = lexer.lex();
-            for i in lexed{println!("[{}]",i.to_string());}
+            print_tokens(lexed);
+            std::process::exit(exitcode::OK);
         }else if args[1] == "compile"{
             println!("building");
         }
@@ -122,18 +126,37 @@ impl TOK for Token{
     }
 }
 
-//important functions
-fn read_file(filepath: &String) -> String{
-    let contents = fs::read_to_string(filepath)
-        .expect("Something went wrong reading the file");
-    return contents;
+fn print_tokens(inp:Vec<Token>){
+    for i in inp{println!("{:?}",i.to_string())}
 }
 
-fn split_with_newline(inp:&String) -> Vec<String>{
-    let res: Vec<String> = Vec::new();
-
+//important functions
+fn read_with_newline(filepath:&String) -> Vec<String>{
+    let mut res: Vec<String> = Vec::new();
+    let contents = fs::read_to_string(filepath).expect("Something went wrong reading the file");
+    let mut word:String = String::new();
     
-
+    //importing newlines
+    for i in 0..contents.chars().count(){
+        match contents.chars().nth(i){
+            Some(t) => {
+                if String::from(t) == " "{
+                    res.push(word.to_string());
+                    word = String::new();
+                    continue;
+                }else if String::from(t) == "\n"{
+                    res.push("NewLine".to_string());
+                    word = String::new();
+                    continue;
+                }
+                else{
+                    word += &String::from(t);
+                }
+            },
+            _ => println!("No Char")
+        }
+    }
+    
     return res;
 }
 
@@ -143,8 +166,9 @@ struct Token{
     token_value: String,
 }
 
+//lexer
 struct Lexer{
-    input: String,
+    input: Vec<String>,
 }
 
 trait LEXER{
@@ -154,8 +178,7 @@ trait LEXER{
 impl LEXER for Lexer{
     fn lex(&self) -> Vec<Token>{
         let mut res: Vec<Token> = Vec::new();
-        let spl = split_with_newline(&self.input);
-        for i in spl{
+        for i in &self.input{
             //datatypes
             if i == "String"{
                 res.push(Token{ token_type: TokenTypes::STRING, token_value: String::from(i)});
@@ -169,6 +192,8 @@ impl LEXER for Lexer{
                 res.push(Token{ token_type: TokenTypes::FLOAT, token_value: String::from(i)});
             }else if i == "Double"{
                 res.push(Token{ token_type: TokenTypes::DOUBLE, token_value: String::from(i)});
+            }else if i == "NewLine"{
+                res.push(Token{ token_type: TokenTypes::NEWLINE, token_value: String::from(i)})
             }
             //functions
             else if i == "input"{
@@ -180,10 +205,27 @@ impl LEXER for Lexer{
             else if i == "class"{
                 res.push(Token{ token_type: TokenTypes::CLASS, token_value: String::from(i)});
             }
-            else{res.push(Token{ token_type: TokenTypes::IDENTIFIER, token_value: String::from(i)});}
-            
+            else{
+                res.push(Token{ token_type: TokenTypes::IDENTIFIER, token_value: String::from(i)});
+            }
         }
         
         return res;
+    }
+}
+
+//parser
+
+struct Parser {
+    inp: Vec<Token>
+}
+
+trait Pars{
+    fn parse(&self);
+}
+
+impl Pars for Parser{
+    fn parse(&self){
+        
     }
 }
