@@ -22,7 +22,7 @@ fn main() {
             println!("{} code runing!\n","unoptimized".green());
             let lexer = Lexer{input: read_with_newline(&args[2]).to_vec()};
             let lexed = lexer.lex();
-            print_tokens(lexed);
+            _print_tokens(lexed);
             std::process::exit(exitcode::OK);
         }else if args[1] == "compile"{
             println!("building");
@@ -126,8 +126,8 @@ impl TOK for Token{
     }
 }
 
-fn print_tokens(inp:Vec<Token>){
-    for i in inp{println!("{:?}",i.to_string())}
+fn _print_tokens(inp:Vec<Token>){
+    for i in inp{println!("[{}]",i.to_string())}
 }
 
 //important functions
@@ -143,15 +143,16 @@ fn read_with_newline(filepath:&String) -> Vec<String>{
                 if String::from(t) == " "{
                     res.push(word.to_string());
                     word = String::new();
-                    continue;
-                }else if String::from(t) == "\n"{
-                    res.push("NewLine".to_string());
+                }
+                else if String::from(t) == "\n"{
+                    res.push(word.to_string());
                     word = String::new();
-                    continue;
                 }
-                else{
-                    word += &String::from(t);
+                else if String::from(t) == "\n\r"{
+                    res.push(word.to_string());
+                    word = String::new();
                 }
+                else{word += &String::from(t);}
             },
             _ => println!("No Char")
         }
@@ -192,7 +193,7 @@ impl LEXER for Lexer{
                 res.push(Token{ token_type: TokenTypes::FLOAT, token_value: String::from(i)});
             }else if i == "Double"{
                 res.push(Token{ token_type: TokenTypes::DOUBLE, token_value: String::from(i)});
-            }else if i == "NewLine"{
+            }else if i == &String::new(){
                 res.push(Token{ token_type: TokenTypes::NEWLINE, token_value: String::from(i)})
             }
             //functions
@@ -277,9 +278,7 @@ impl Pars for Parser{
         for i in 0..self.inp.len(){
             let cur = &self.inp[i];
             if cur.token_type.to_string() == TokenTypes::STRING.to_string(){
-                if String::from(self.inp[i+1].token_value.chars().nth(self.inp[i+1].token_value.chars().count()).unwrap()) == "="{
-                    
-                }
+                
             }
         }
     }
