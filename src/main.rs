@@ -1,10 +1,10 @@
 #[allow(dead_code)]
+//libs
 use std::env;
 use std::fs;
 use colored::*;
 use std::fmt;
 use exitcode;
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args[1] == "help" {
@@ -29,47 +29,6 @@ fn main() {
         }
     }
 }
-}
-#[derive(Debug)]
-pub enum TokenTypes{
-    //dataTokenTypes
-    ARRAY,
-    STRING,
-    TABLE,
-    INTEGER,
-    BOOL,
-    DOUBLE,
-    FLOAT,
-    //functions
-    PRINTFN,
-    INPUT,
-    //misc
-    IDENTIFIER,
-    CLASS,
-    NEWLINE,
-    RPAREN,
-    LPAREN,
-    //operators
-    PLUS,
-    MINUS,
-    DIV,
-    MUL,
-    EQUALS,
-    //statments
-    IFEQUALS,
-    LESSOREQUAL,
-    MOREOREQUAL,
-    BIGGERTHAN,
-    SMALLERTHAN,
-    NOT,
-    OR,
-    AND,
-    //loops
-    WHILE,
-    FOR,
-    IF,
-    THEN,
-    ACTION
 }
 
 //turning enums to string
@@ -108,6 +67,7 @@ impl fmt::Display for TokenTypes{
             TokenTypes::DOUBLE => write!(f,"DOUBLE"),
             TokenTypes::INPUT => write!(f,"INPUT"),
             TokenTypes::CLASS => write!(f,"CLASS"),
+            TokenTypes::COMMENT => write!(f,"COMMENT"),
         }
     }
 }
@@ -134,30 +94,14 @@ fn _print_tokens(inp:Vec<Token>){
 fn read_with_newline(filepath:&String) -> Vec<String>{
     let mut res: Vec<String> = Vec::new();
     let contents = fs::read_to_string(filepath).expect("Something went wrong reading the file");
-    let mut word:String = String::new();
     
-    //importing newlines
-    for i in 0..contents.chars().count(){
-        match contents.chars().nth(i){
-            Some(t) => {
-                if String::from(t) == " "{
-                    res.push(word.to_string());
-                    word = String::new();
-                }
-                else if String::from(t) == "\n"{
-                    res.push(word.to_string());
-                    word = String::new();
-                }
-                else if String::from(t) == "\n\r"{
-                    res.push(word.to_string());
-                    word = String::new();
-                }
-                else{word += &String::from(t);}
-            },
-            _ => println!("No Char")
+    for i in contents.lines(){
+        for b in i.split_whitespace(){
+            res.push(b.to_string());
         }
+        res.push("NewLine".to_string());
     }
-    
+
     return res;
 }
 
@@ -174,6 +118,50 @@ struct Lexer{
 
 trait LEXER{
     fn lex(&self) -> Vec<Token>;
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum TokenTypes{
+    //datatypes
+    ARRAY,
+    STRING,
+    TABLE,
+    INTEGER,
+    BOOL,
+    DOUBLE,
+    FLOAT,
+    //functions
+    PRINTFN,
+    INPUT,
+    //misc
+    IDENTIFIER,
+    CLASS,
+    NEWLINE,
+    RPAREN,
+    LPAREN,
+    COMMENT,
+    //operators
+    PLUS,
+    MINUS,
+    DIV,
+    MUL,
+    EQUALS,
+    //statments
+    IFEQUALS,
+    LESSOREQUAL,
+    MOREOREQUAL,
+    BIGGERTHAN,
+    SMALLERTHAN,
+    NOT,
+    OR,
+    AND,
+    //loops
+    WHILE,
+    FOR,
+    IF,
+    THEN,
+    ACTION
 }
 
 impl LEXER for Lexer{
@@ -196,16 +184,70 @@ impl LEXER for Lexer{
             }else if i == &String::new(){
                 res.push(Token{ token_type: TokenTypes::NEWLINE, token_value: String::from(i)})
             }
+
             //functions
             else if i == "input"{
                 res.push(Token{ token_type: TokenTypes::INPUT, token_value: String::from(i)});
-            }else if i == "print"{
-                res.push(Token{ token_type: TokenTypes::PRINTFN, token_value: String::from(i)});
+            }else if i.chars().count() > 5{
+                if i[0..5] == String::from("print"){
+                    res.push(Token{ token_type: TokenTypes::PRINTFN, token_value: String::from(i)});
+                }
             }
+
             //misc
             else if i == "class"{
                 res.push(Token{ token_type: TokenTypes::CLASS, token_value: String::from(i)});
+            }else if i == "NewLine"{
+                res.push(Token{ token_type: TokenTypes::NEWLINE, token_value: String::from("NewLine")});
             }
+
+            //operators
+            else if i == "+"{
+                res.push(Token{ token_type: TokenTypes::PLUS, token_value: String::from(i)});
+            }else if i == "-" {
+                res.push(Token{ token_type: TokenTypes::MINUS, token_value: String::from(i)});
+            }else if i == "/" {
+                res.push(Token{ token_type: TokenTypes::DIV, token_value: String::from(i)});
+            }else if i == "*" {
+                res.push(Token{ token_type: TokenTypes::MUL, token_value: String::from(i)});
+            }else if i == "="{
+                res.push(Token{ token_type: TokenTypes::EQUALS, token_value: String::from(i)});
+            }
+
+            //statments
+            else if i == "=="{
+                res.push(Token{ token_type: TokenTypes::IFEQUALS, token_value: String::from(i)});
+            }else if i == "<="{
+                res.push(Token{ token_type: TokenTypes::LESSOREQUAL, token_value: String::from(i)});
+            }else if i == "=>"{
+                res.push(Token{ token_type: TokenTypes::MOREOREQUAL, token_value: String::from(i)});
+            }else if i == "<"{
+                res.push(Token{ token_type: TokenTypes::SMALLERTHAN, token_value: String::from(i)});
+            }else if i == ">"{
+                res.push(Token{ token_type: TokenTypes::BIGGERTHAN, token_value: String::from(i)});
+            }else if i == "!=" || i == "not"{
+                res.push(Token{ token_type: TokenTypes::NOT, token_value: String::from(i)});
+            }else if i == "&&" || i == "and"{
+                res.push(Token{ token_type: TokenTypes::AND, token_value: String::from(i)});
+            }else if i == "||" || i == "or"{
+                res.push(Token{ token_type: TokenTypes::OR, token_value: String::from(i)});
+            }
+
+            //loops
+            else if i == "for"{
+                res.push(Token{ token_type: TokenTypes::FOR, token_value: String::from(i)});
+            }else if i == "while"{
+                res.push(Token{ token_type: TokenTypes::WHILE, token_value: String::from(i)});
+            }else if i == "if"{
+                res.push(Token{ token_type: TokenTypes::IF, token_value: String::from(i)});
+            }else if i == "action"{
+                res.push(Token{ token_type: TokenTypes::ACTION, token_value: String::from(i)});
+            }else if i == "then"{
+                res.push(Token{ token_type: TokenTypes::THEN, token_value: String::from(i)});
+            }else if i[..1] == String::from("&"){
+                res.push(Token{ token_type: TokenTypes::COMMENT, token_value: String::from(i)});
+            }
+
             else{
                 res.push(Token{ token_type: TokenTypes::IDENTIFIER, token_value: String::from(i)});
             }
@@ -215,79 +257,69 @@ impl LEXER for Lexer{
     }
 }
 
-//string slicing
-use std::ops::{Bound, RangeBounds};
-
-trait StringUtils {
-    fn substring(&self, start: usize, len: usize) -> &str;
-    fn slice(&self, range: impl RangeBounds<usize>) -> &str;
-}
-
-impl StringUtils for String {
-    fn substring(&self, start: usize, len: usize) -> &str {
-        let mut char_pos = 0;
-        let mut byte_start = 0;
-        let mut it = self.chars();
-        loop {
-            if char_pos == start { break; }
-            if let Some(c) = it.next() {
-                char_pos += 1;
-                byte_start += c.len_utf8();
-            }
-            else { break; }
-        }
-        char_pos = 0;
-        let mut byte_end = byte_start;
-        loop {
-            if char_pos == len { break; }
-            if let Some(c) = it.next() {
-                char_pos += 1;
-                byte_end += c.len_utf8();
-            }
-            else { break; }
-        }
-        &self[byte_start..byte_end]
-    }
-    fn slice(&self, range: impl RangeBounds<usize>) -> &str {
-        let start = match range.start_bound() {
-            Bound::Included(bound) | Bound::Excluded(bound) => *bound,
-            Bound::Unbounded => 0,
-        };
-        let len = match range.end_bound() {
-            Bound::Included(bound) => *bound + 1,
-            Bound::Excluded(bound) => *bound,
-            Bound::Unbounded => self.len(),
-        } - start;
-        self.substring(start, len)
-    }
-}
-
 //parser
 struct Parser {
     inp: Vec<Token>
 }
 
 trait Pars{
-    fn parse(&self);
+    fn parse(self);
 }
 
+//datatypes
+#[derive(PartialEq)]
+#[derive(Debug)]
+pub enum DataTypes{
+    ARRAY,
+    STRING,
+    TABLE,
+    INTEGER,
+    BOOL,
+    DOUBLE,
+    FLOAT,
+}
+
+impl fmt::Display for DataTypes{
+    fn fmt(&self,f: &mut fmt::Formatter) -> fmt::Result{
+        match self{
+            DataTypes::FLOAT => write!(f,"FLOAT"),
+            DataTypes::DOUBLE => write!(f,"DOUBLE"), 
+            DataTypes::STRING => write!(f,"STRING"),
+            DataTypes::INTEGER => write!(f,"INTEGER"),
+            DataTypes::BOOL => write!(f,"BOOL"),
+            DataTypes::ARRAY => write!(f,"ARRAY"),
+            DataTypes::TABLE => write!(f,"TABLE"),
+        }
+    }
+}
 impl Pars for Parser{
-    fn parse(&self){
+    fn parse(self){
         //variable detection
-        let varlist: Vec<Variable> = Vec::new();
+        let mut varlist: Vec<Variable> = Vec::new();
         for i in 0..self.inp.len(){
             let cur = &self.inp[i];
-            if cur.token_type.to_string() == TokenTypes::STRING.to_string(){
-                
-            }
+            if cur.token_type.to_string() == DataTypes::STRING.to_string(){
+                let mut list: Vec<&String> = Vec::new(); 
+                for b in i..self.inp.len(){
+                    let varcur = &self.inp[b];
+                    if varcur.token_value == "NewLine"{
+                        break;
+                    }else{
+                        list.push(&varcur.token_value);
+                    }
+                }
+                varlist.push(Variable{ vartype:DataTypes::STRING, varname:  })
+            } 
         }
+        for b in varlist{println!("{}",b.to_string())}
     }
 }
 
 //utilities
 
+#[derive(Debug)]
 struct Variable{
-    vartype: TokenTypes,
+    vartype: DataTypes,
     varname: String,
     varvar:String, 
 }
