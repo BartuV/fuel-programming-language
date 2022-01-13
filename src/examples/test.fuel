@@ -1,9 +1,5 @@
-//truth machine
+&comment test
 
-String inp = input()
+String a = "Fuel is awesome"
 
-if inp.val() == 1 then{
-    print("1")
-}else {
-    print("0")
-}
+print(a)
