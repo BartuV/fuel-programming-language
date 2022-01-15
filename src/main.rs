@@ -12,22 +12,20 @@ fn main() {
         println!("{}","Usage:Fuel <run or compile> <filepath>\n".yellow());
     }else{
     if args.len() < 3 {
-        println!("{}","Not enough items".red()); 
-        std::process::exit(exitcode::USAGE);
+        _give_error(ErrorTypes::ARGS,"Not enough items".to_string());
     }else if args.len() > 3{
-        println!("{}","Too many arguments".red());
-        std::process::exit(exitcode::USAGE);
+        _give_error(ErrorTypes::ARGS,"Too many arguments".to_string());
     }
     else{
         if args[1] == "run"{
-            println!("{} code runing!\n","unoptimized".green());
+            println!("{}\n","Code is running".green());
             let lexer = Lexer{input: read_with_newline(&args[2]).to_vec()};
             let lexed = lexer.lex();
             let parser = Parser{ inp:lexed };
             parser.parse();
             std::process::exit(exitcode::OK);
-        }else if args[1] == "compile"{
-            println!("building");
+        }else{
+            _give_error(ErrorTypes::ARGS,"Unknown command".to_string());
         }
     }
 }
@@ -381,11 +379,34 @@ impl Pars for Parser{
             }
             if &cur.token_value.chars().count() > &5{
                 if &cur.token_value[..5] == "print"{
-                    for prnt in varlist.iter(){
-                        if _remove_whitespace(&prnt.varname) == String::from(&cur.token_value[6..cur.token_value.chars().count()-1]){
-                            println!("{}",prnt.varvar);
-                        }else{
-                            println!("{}",String::from(&cur.token_value[6..cur.token_value.chars().count()-1]))
+                    let mut count = 0;
+                    for b in varlist.iter(){
+                        if count < 1{
+                            if _remove_whitespace(&b.varname) == cur.token_value[6..cur.token_value.chars().count()-1].to_string(){
+                                if &b.varvar[..1] == " "{
+                                    println!("{}",&b.varvar[2..b.varvar.chars().count()-2]);
+                                }else{
+                                    println!("{}",&b.varvar[1..b.varvar.chars().count()-2]);
+                                }
+                                count+=1
+                            }else{
+                                let mut p:String = String::new();
+                                for n in i..self.inp.len()-1{
+                                    let curcur = &self.inp[n];
+                                    if curcur.token_type == TokenTypes::NEWLINE{
+                                        break;
+                                    }else{
+                                        p += &curcur.token_value;
+                                        p += " ";
+                                    }
+                                }
+                                if p[p.chars().count()-3..p.chars().count()-2] == String::from('"') && p[6..7] == String::from('"') {
+                                    println!("{}",p[7..p.chars().count()-3].to_string());
+                                }else{
+                                    _give_error(ErrorTypes::SYNTAX, "invalid syntax".to_string());
+                                }
+                                count+=1;
+                            }
                         }
                     }
                 }
@@ -418,4 +439,15 @@ impl Tostr for Variable{
         res += &self.varvar;
         return res;
     }
+}
+
+pub enum ErrorTypes{
+    SYNTAX,
+    FILE,
+    ARGS
+}
+
+fn _give_error(_typ: ErrorTypes,val:String){
+    println!("{} {}","Code exited because:".red(),val.red());
+    std::process::exit(exitcode::USAGE);
 }
