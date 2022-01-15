@@ -1,5 +1,7 @@
 &comment test
 
-String a = "Fuel is awesome"
+String a = "Greate news"
+String b = "We hit a milestone"
 
 print(a)
+print(b)

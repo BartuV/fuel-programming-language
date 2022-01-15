@@ -5,13 +5,14 @@ use std::fs;
 use colored::*;
 use std::fmt;
 use exitcode;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args[1] == "help" {
-        println!("Usage:Fuel <run or compile> <filepath>\n");
+        println!("{}","Usage:Fuel <run or compile> <filepath>\n".yellow());
     }else{
     if args.len() < 3 {
-        println!("{}","Please provide a filepath".red()); 
+        println!("{}","Not enough items".red()); 
         std::process::exit(exitcode::USAGE);
     }else if args.len() > 3{
         println!("{}","Too many arguments".red());
@@ -22,7 +23,8 @@ fn main() {
             println!("{} code runing!\n","unoptimized".green());
             let lexer = Lexer{input: read_with_newline(&args[2]).to_vec()};
             let lexed = lexer.lex();
-            _print_tokens(lexed);
+            let parser = Parser{ inp:lexed };
+            parser.parse();
             std::process::exit(exitcode::OK);
         }else if args[1] == "compile"{
             println!("building");
@@ -72,11 +74,7 @@ impl fmt::Display for TokenTypes{
     }
 }
 
-trait TOK{
-    fn to_string(&self) -> String;
-}
-
-impl TOK for Token{
+impl Tostr for Token{
     fn to_string(&self) -> String{
         let mut a:String = String::new();
         a += &String::from(self.token_type.to_string());
@@ -96,12 +94,16 @@ fn read_with_newline(filepath:&String) -> Vec<String>{
     let contents = fs::read_to_string(filepath).expect("Something went wrong reading the file");
     
     for i in contents.lines(){
-        for b in i.split_whitespace(){
-            res.push(b.to_string());
+        let con:Vec<&str> = i.split(" ").collect();
+        for b in con{
+            if b == ""{
+                continue
+            }else{
+                res.push(b.to_string());
+            }
         }
-        res.push("NewLine".to_string());
+        res.push(String::from("NewLine"));
     }
-
     return res;
 }
 
@@ -181,24 +183,18 @@ impl LEXER for Lexer{
                 res.push(Token{ token_type: TokenTypes::FLOAT, token_value: String::from(i)});
             }else if i == "Double"{
                 res.push(Token{ token_type: TokenTypes::DOUBLE, token_value: String::from(i)});
-            }else if i == &String::new(){
-                res.push(Token{ token_type: TokenTypes::NEWLINE, token_value: String::from(i)})
             }
 
             //functions
             else if i == "input"{
                 res.push(Token{ token_type: TokenTypes::INPUT, token_value: String::from(i)});
-            }else if i.chars().count() > 5{
-                if i[0..5] == String::from("print"){
-                    res.push(Token{ token_type: TokenTypes::PRINTFN, token_value: String::from(i)});
-                }
             }
 
             //misc
             else if i == "class"{
                 res.push(Token{ token_type: TokenTypes::CLASS, token_value: String::from(i)});
             }else if i == "NewLine"{
-                res.push(Token{ token_type: TokenTypes::NEWLINE, token_value: String::from("NewLine")});
+                res.push(Token{ token_type: TokenTypes::NEWLINE, token_value: String::from(i)});
             }
 
             //operators
@@ -245,9 +241,10 @@ impl LEXER for Lexer{
             }else if i == "then"{
                 res.push(Token{ token_type: TokenTypes::THEN, token_value: String::from(i)});
             }else if i[..1] == String::from("&"){
-                res.push(Token{ token_type: TokenTypes::COMMENT, token_value: String::from(i)});
+                res.push(Token{ token_type: TokenTypes::COMMENT, token_value: String::from(i)[1..i.chars().count()].to_string()});
             }
 
+            //idetifiers(variable names and function names)
             else{
                 res.push(Token{ token_type: TokenTypes::IDENTIFIER, token_value: String::from(i)});
             }
@@ -292,26 +289,109 @@ impl fmt::Display for DataTypes{
         }
     }
 }
+
+fn _remove_whitespace(s: &String) -> String {
+    s.split_whitespace().collect()
+}
+
 impl Pars for Parser{
     fn parse(self){
         //variable detection
         let mut varlist: Vec<Variable> = Vec::new();
         for i in 0..self.inp.len(){
             let cur = &self.inp[i];
-            if cur.token_type.to_string() == DataTypes::STRING.to_string(){
-                let mut list: Vec<&String> = Vec::new(); 
-                for b in i..self.inp.len(){
+            if cur.token_type == TokenTypes::STRING{
+                let mut varline = String::new();
+                for b in i+1..self.inp.len()-1{
                     let varcur = &self.inp[b];
-                    if varcur.token_value == "NewLine"{
+                    if varcur.token_type == TokenTypes::NEWLINE{
                         break;
                     }else{
-                        list.push(&varcur.token_value);
+                        varline += &_remove_whitespace(&varcur.token_value);
+                        varline += " ";
                     }
                 }
-                varlist.push(Variable{ vartype:DataTypes::STRING, varname:  })
+                let spl: Vec<&str> = varline.split('=').collect();
+                varlist.push(Variable{ vartype: DataTypes::STRING, varname: String::from(spl[0]), varvar: String::from(spl[1]) });
+            }else if cur.token_type == TokenTypes::FLOAT{
+                let mut varline = String::new();
+                for b in i+1..self.inp.len()-1{
+                    let varcur = &self.inp[b];
+                    if varcur.token_type == TokenTypes::NEWLINE{
+                        break;
+                    }else{
+                        varline += &_remove_whitespace(&varcur.token_value);
+                        varline += " ";
+                    }
+                }
+                let spl: Vec<&str> = varline.split('=').collect();
+                varlist.push(Variable{ vartype: DataTypes::FLOAT, varname: String::from(spl[0]), varvar: String::from(spl[1]) });
+            }else if cur.token_type == TokenTypes::DOUBLE{
+                let mut varline = String::new();
+                for b in i+1..self.inp.len()-1{
+                    let varcur = &self.inp[b];
+                    if varcur.token_type == TokenTypes::NEWLINE{
+                        break;
+                    }else{
+                        varline += &_remove_whitespace(&varcur.token_value);
+                        varline += " ";
+                    }
+                }
+                let spl: Vec<&str> = varline.split('=').collect();
+                varlist.push(Variable{ vartype: DataTypes::DOUBLE, varname: String::from(spl[0]), varvar: String::from(spl[1]) });
+            }else if cur.token_type == TokenTypes::INTEGER{
+                let mut varline = String::new();
+                for b in i+1..self.inp.len()-1{
+                    let varcur = &self.inp[b];
+                    if varcur.token_type == TokenTypes::NEWLINE{
+                        break;
+                    }else{
+                        varline += &_remove_whitespace(&varcur.token_value);
+                        varline += " ";
+                    }
+                }
+                let spl: Vec<&str> = varline.split('=').collect();
+                varlist.push(Variable{ vartype: DataTypes::INTEGER, varname: String::from(spl[0]), varvar: String::from(spl[1]) });
+            }else if cur.token_type == TokenTypes::BOOL{
+                let mut varline = String::new();
+                for b in i+1..self.inp.len()-1{
+                    let varcur = &self.inp[b];
+                    if varcur.token_type == TokenTypes::NEWLINE{
+                        break;
+                    }else{
+                        varline += &_remove_whitespace(&varcur.token_value);
+                        varline += " ";
+                    }
+                }
+                let spl: Vec<&str> = varline.split('=').collect();
+                varlist.push(Variable{ vartype: DataTypes::BOOL, varname: String::from(spl[0]), varvar: String::from(spl[1]) });
+            }else if cur.token_type == TokenTypes::ARRAY{
+                let mut varline = String::new();
+                for b in i+1..self.inp.len()-1{
+                    let varcur = &self.inp[b];
+                    if varcur.token_type == TokenTypes::NEWLINE{
+                        break;
+                    }else{
+                        varline += &_remove_whitespace(&varcur.token_value);
+                        varline += " ";
+                    }
+                }
+                let spl: Vec<&str> = varline.split('=').collect();
+                varlist.push(Variable{ vartype: DataTypes::ARRAY, varname: String::from(spl[0]), varvar: String::from(spl[1]) });
+            }
+            if &cur.token_value.chars().count() > &5{
+                if &cur.token_value[..5] == "print"{
+                    for prnt in varlist.iter(){
+                        if _remove_whitespace(&prnt.varname) == String::from(&cur.token_value[6..cur.token_value.chars().count()-1]){
+                            println!("{}",prnt.varvar);
+                        }else{
+                            println!("{}",String::from(&cur.token_value[6..cur.token_value.chars().count()-1]))
+                        }
+                    }
+                }
             } 
         }
-        for b in varlist{println!("{}",b.to_string())}
+        
     }
 }
 
@@ -334,6 +414,7 @@ impl Tostr for Variable{
         res += &self.vartype.to_string();
         res += ", ";
         res += &self.varname;
+        res += ", ";
         res += &self.varvar;
         return res;
     }
